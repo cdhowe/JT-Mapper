@@ -1,6 +1,8 @@
 # JT-Mapper: Real-time mapping of multiple simultaneous JT65 and JT9 digital exchanges
 ## Author: Carl Howe, WG1V
 
+![](help-images/splashscreen.jpg)
+
 The development of K1JT's JT65 and JT9 protocols have reinvented digital ham radio. Thanks to Joe's and the efforts of other developers of the `WSJT-X` software program, hams now can work the world with modest transceivers and a computer with an audio card.
 
 `WSJT-X` not only offers new radio modes to hams, but it provides a new software platform to better understand our radio environment. When we look at the WSJT-X's Band Activity display, we see information that we don't typically have in other modes, including:
@@ -105,6 +107,9 @@ The basic operation of the program is a simple 5 step process:
 5. Categorize the label for the call by whether the transmission occurred within the last minute and whether it contained our call or a CQ.
 
 Much of the complexity of the program comes from trying to properly scale the map to include all the stations heard while not plotting too much.
+
+## Modification for Linux
+To run `JT-Mapper` on Linux, you must modify the `new_window` function at the top of the file. Simply comment out the line that begins with `quartz` and replace it with the currently commented line that starts with `x11`. The change is necessary because of the different R functions used in the two operating systems create a new window for the map.
 
 ## Issues, Bugs, and Challenges
 I wrote this program to satisfy my own JT65 and JT9 operating interests and needs. As such, it is very much a work in progress and has many shortcomings. To prevent others from being surprised, here's a quick rundown of things that the program doesn't do well:
