@@ -100,7 +100,6 @@ If you don't include a number of lines, the number of lines will default to 50. 
 Once you have `wsjtxlines`, `mycall`, and `mygrid` set properly in the program itself, all you need to do to run JT-Mapper is type:
 
 ```
-% chmod 755 ./JT-Mapper.R
 % ./JT-Mapper.R
 ```
 At present, the program doesn't remember those values between runs unless you change the variables in the program itself.
