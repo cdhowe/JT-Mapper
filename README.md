@@ -25,7 +25,9 @@ The mapper is running in the window at the top of the screen. The standard WSJT-
 
 In the screen shot shown above, I'm currently engaged in a JT9 exchange with HA5CPN in Hungary, whose call sign is shown in red. While I've been engaged in that QSO, I can also see that EA2XR called CQ during the minute that HA5CPN was responding, as shown by its dark green tag. Meanwhile, G4GIR has been heard communicating with some other station, as shown by the light green marker. Finally, I can see that 9H1CL in Malta and F4BKT in France have been heard earlier on the band, as indicated by their white backgrounds. 
 
-Here are the legends in table form:
+By automatically showing you where the stations you can hear are, `JT-Mapper` gives you an overview of all the stations currently being heard within your transceiver's passband and where they are. The color codes also reflect the progress each station has made through their standardized QSO, allowing you to target new QSOs when they've completed their exchange.
+
+Here are the callsign tags and their colors in table form:
 
 | Icon  | Meaning  |
 |:---:|---|
@@ -36,7 +38,7 @@ Here are the legends in table form:
 
 For stations heard over a minute ago, their callsigns and location dots get fainter the older they are.
 
-By automatically showing you where the stations you can hear are, `JT-Mapper` gives you an overview of all the stations currently being heard within your transceiver's passband and where they are. The color codes also reflect the progress each station has made through their standardized QSO, allowing you to target new QSOs when they've completed their exchange.
+Note that if you use a different color scheme for coloring your WSJT-X responses than I do (and you probably do), you can change the colors in `JT-Mapper` to match your palette by changing the variables `callingcolor`, `cqcolor`, `heardcolor`, and `oldcolor`. All of those variables are defined on the first page of the program.
 
 ## Running JT-Mapper
 ### My Ham Environment
