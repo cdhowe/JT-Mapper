@@ -86,9 +86,21 @@ Once you have R installed, you need to download several external libraries from 
 > pkgs <- c('readr', 'stringr', 'sp', 'rgdal', 'ggplot2', 
           'ggmap', 'maptools', 'lubridate', 'rworldmap', 'dplyr', dependencies=TRUE).
 > install.packages(pkgs)
+> quit()
+```
+Once you have all the packages installed, you'll need to modify the first line of `JT-Mapper.R` to point to the location of Rscript on your machine. On my Mac, it's in /usr/local/bin, so my first line reads:
+
+```
+#!/usr/local/bin/Rscript
 ```
 
-To run JT-Mapper on Linux or Mac OS X, perform the following steps at your shell command line:
+On your system, it might be in /usr/bin or in /var/local/bin. You can find out where Rscript lives by typing the following at the shell prompt
+
+```
+% which Rscript
+```
+
+Once you've made that small change to `JT-Mapper.R`, type the following steps at your shell command line:
 
 ```
 % chmod 755 ./JT-Mapper.R
