@@ -1,23 +1,18 @@
-# JT-Mapper: Real-time mapping of multiple simultaneous JT65 and JT9 digital exchanges
+# JT-Mapper: Real-time JT65 and JT9 Maps
 ## Author: Carl Howe, WG1V
 
 ![](help-images/splashscreen.jpg)
 
 The development of K1JT's JT65 and JT9 protocols have reinvented digital ham radio. Thanks to Joe's and the efforts of other developers of the `WSJT-X` software program, hams now can work the world with modest transceivers and a computer with an audio card.
 
-`WSJT-X` not only offers new radio modes to hams, but it provides a new software platform to better understand our radio environment. When we look at the WSJT-X's Band Activity display, we see information that we don't typically have in other modes, including:
+`WSJT-X` not only offers new radio modes to hams, but it provides a  software platform to better understand our radio environment. When we look at the WSJT-X's Band Activity display, we see information that we don't typically have in other modes, including:
 
-* **Standardized exchanges**. Unlike the free text modes such as PSK31 or RTTY, JT65 and JT9 QSOs are highly formal exchanges and can easily be decided by machine.
-* **Multiple signal decoding**. Instead of being limited to our own QSOs, we can hear and understand multiple QSOs in progress at once.
-* **Locations in machine readable form**. Unlike more freeform city and country descriptions, JT9 and JT65 include standard four digit grid square locations in their formal QSO exchange.
+* **Standardized exchanges**. Unlike the free text modes such as PSK31 or RTTY, JT65 and JT9 QSOs are highly formal exchanges and can easily be decoded by machine.
+* **Multiple signal decoding**. Instead of being limited to our own QSOs, we can hear and understand multiple QSOs in progress.
+* **Locations in machine readable form**. Unlike more free-form city and country descriptions, JT9 and JT65 include standard four digit grid square locations in their formal QSO exchanges.
 * **Continuous logging**. Every transmitted and received sequence is logged in a file, making it easy for other programs to use information that WSJT-X collects.
 
 During my operating with JT65 and JT9 for about 9 months now, I've found myself constantly looking up grid squares while trying to get a sense of the band's propagation. With all this information already in my computer, I decided that my computer could do more to visualize my radio environment. 
-
-## My Ham Environment
-My station is relatively modest. My rig is an old Icom 706MKIIg HF-VHF-UHF transceiver that feeds an off-center fed dipole. The computer I use is a Mac mini running Mac OS X 10.12.4. It connects to the rig through a Signalink USB audio interface.
-
-While `JT-Mapper` was designed for Mac OS X, it should run on Windows and Linux machines with only some parameter changes.
 
 ## JT-Mapper: Real-time QSO Mapping
 It's easier to show what the program does than to describe it. Here's a screen shot of the mapper in action:
@@ -44,6 +39,11 @@ For stations heard over a minute ago, their callsigns and location dots get fain
 By automatically showing you where the stations you can hear are, `JT-Mapper` gives you an overview of all the stations currently being heard within your transceiver's passband and where they are. The color codes also reflect the progress each station has made through their standardized QSO, allowing you to target new QSOs when they've completed their exchange.
 
 ## Running JT-Mapper
+### My Ham Environment
+My station is modest. My rig is an old Icom 706MKIIg HF-VHF-UHF transceiver that feeds an off-center fed dipole. The computer I use is a Mac mini running Mac OS X 10.12.4. It connects to the rig through a Signalink USB audio interface.
+
+While `JT-Mapper` was designed for Mac OS X, it should run on Linux machines with only parameter changes and one comment change. Running on Windows would require a bit more tweaking, largely to work around the lack of a `tail` command to examine the ALL.TXT file.
+
 #### On Linux and Mac OS X
 Before you can run JT-Mapper, you need to install the R programming environment and a collection of packages for plotting and data manipulation. Fortunately, all of these are open source and readily available.
 
@@ -95,30 +95,33 @@ To run JT-Mapper on Linux or Mac OS X, perform the following steps at your shell
 
 If you don't type in a callsign and grid, JT-Mapper will use default variables values in the program. To make JT-Mapper always use your callsign and grid locator, open a text editor (TextEdit works well on Mac OS X), and change the variables `mycall` and `mygrid`.
 
+#### Modification for Linux
+To run `JT-Mapper` on Linux, you must modify the `new_window` function at the top of the file. Simply comment out the line that begins with `quartz` and replace it with the currently commented line that starts with `x11`. The change is necessary because of the different R functions used in the two operating systems create a new window for the map.
+
+#### Windows Is Not Yet Supported
+Unfortunately `JT-Mapper` doesn't yet run on Windows. As noted below, the program uses the `tail` utility to read the last 50 lines of the `WSJT-X` ALL.TXT file. To run on Windows, I should probably change that code to use a function that performs the same function in R. Clearly I haven't gotten around to that yet.
+
 ## How the Software Works
 JT-Mapper is written in R, a high-level language typically used by data scientists for its analytical and visualization capabilities. While I developed this software on Mac OS X, it can be run on Windows and Linux as well just by tweaking some of the variables at the beginning of the program.
 
 The basic operation of the program is a simple 5 step process:
 
 1. Wait until the 52 second mark of each minute.
-2. Once there, read the last 50 lines of the ALL.TXT file written by the WSJT-X program. On Macs, this is kept in `/Users/username/Library/Application Support/WSJT-X/`. On other operating systems it is in a different place; you can adjust the location by changing the variable `loglocation`. You can also adjust the number of lines the program reads by adding a first argument on the command line or by changing the variable `wsjtxlines`.
+2. At 52 seconds past the minute, run the `tail` utility read the last 50 lines of the ALL.TXT file written by the WSJT-X program. On Macs, this is kept in `/Users/username/Library/Application Support/WSJT-X/`. On other operating systems it is in a different place; you can adjust the location by changing the variable `loglocation`. You can also adjust the number of lines the program reads by adding a first argument on the command line or by changing the variable `wsjtxlines`.
 3. Find all the transmissions that have a grid locator at the end of the line, and convert that to a longitude and latitude.
 4. For all the transmissions that don't have a grid locator in them, see if the sending callsign has sent a grid locator in the last 50 lines and use that location instead.
 5. Categorize the label for the call by whether the transmission occurred within the last minute and whether it contained our call or a CQ.
 
-Much of the complexity of the program comes from trying to properly scale the map to include all the stations heard while not plotting too much.
-
-## Modification for Linux
-To run `JT-Mapper` on Linux, you must modify the `new_window` function at the top of the file. Simply comment out the line that begins with `quartz` and replace it with the currently commented line that starts with `x11`. The change is necessary because of the different R functions used in the two operating systems create a new window for the map.
+Much of the complexity of the program comes from trying to properly scale the map to include all the stations heard while not plotting too much or trying to scale the map past 180 degrees of longitude and 90 degrees of latitude. The current code is not optimal or even particularly well-structured, but it works and I'm sticking with it until I rewrite all the mapping code to use better maps and real projections.
 
 ## Issues, Bugs, and Challenges
 I wrote this program to satisfy my own JT65 and JT9 operating interests and needs. As such, it is very much a work in progress and has many shortcomings. To prevent others from being surprised, here's a quick rundown of things that the program doesn't do well:
 
 * **Handing midnight GMT**: When midnight GMT comes, the program doesn't recognize and categorize new transmissions correctly until older sequences aren't in the list of last 50 transmissions. This is because it sorts the list according to just GMT time, not time and date.
-* **Handling long callsigns**: The program callsign parser is pretty ad-hoc, and doesn't really understand callsigns with slashes in them. It muddles through, but it could do better.
+* **Handling long and unusual callsigns**: The program callsign parser is pretty ad-hoc, and doesn't really understand extended callsigns. It muddles through, but it could do better.
 * **Overplotting**: If you hear many calls at once, they by necessity will overwrite each other on the map. You can reduce this by reducing the number of lines of log you process each run, but the program doesn't make any effort to avoid the issue.
 * **The map isn't a proper projection**: R is happy to do map projections, but doing them with a high resolution isn't very fast. Instead of slowing down the plotting for the prettiest plot, I simply plot latitude and longitude using a rectangular grid. As a result, many of the countries and continents are distorted from their actual shapes and areas.
 
-I'm sure there are many more bugs; feel free to clone this repository and fix issues that bother you. And by all means, let me know if you create nifty new enhancements. I can be reached at:
+I'm sure there are many more bugs; feel free to clone this repository and fix issues that bother you. And by all means, let me know if you modify the code to do nifty new things or to work better on other platforms. I can be reached at:
 
 wg1v@carlhowe.com
