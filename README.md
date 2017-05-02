@@ -14,7 +14,7 @@ The development of K1JT's JT65 and JT9 protocols have reinvented digital ham rad
 
 During my operating with JT65 and JT9 for about 9 months now, I've found myself constantly looking up grid squares while trying to get a sense of the band's propagation. With all this information already in my computer, I decided that my computer could do more to visualize my radio environment. 
 
-## JT-Mapper: Real-time QSO Mapping
+## JT-Mapper: Real-time WSJT-X Exchange Mapping
 It's easier to show what the program does than to describe it. Here's a screen shot of the mapper in action:
 
 ![](help-images/mapperscreen4.jpg)
@@ -90,10 +90,18 @@ To run JT-Mapper on Linux or Mac OS X, perform the following steps at your shell
 
 ```
 % chmod 755 ./JT-Mapper.R
-% ./JT-Mapper.R 50 your-call-sign your-grid
+% ./JT-Mapper.R number-of-lines your-call-sign your-grid
 ```
 
-If you don't type in a callsign and grid, JT-Mapper will use default variables values in the program. To make JT-Mapper always use your callsign and grid locator, open a text editor (TextEdit works well on Mac OS X), and change the variables `mycall` and `mygrid`.
+If you don't include a number of lines, the number of lines will default to 50. If you don't type in a callsign and grid, JT-Mapper will use default variables values in the program, namely my callsign (WG1V) and my grid location (FN42). To make JT-Mapper always use your callsign and grid locator, open a text editor (TextEdit works well on Mac OS X), and change the variables `mycall` and `mygrid`.
+
+Once you have `wsjtxlines`, `mycall`, and `mygrid` set properly in the program itself, all you need to do to run JT-Mapper is type:
+
+```
+% chmod 755 ./JT-Mapper.R
+% ./JT-Mapper.R
+```
+At present, the program doesn't remember those values between runs unless you change the variables in the program itself.
 
 #### Modification for Linux
 To run `JT-Mapper` on Linux, you must modify the `new_window` function at the top of the file. Simply comment out the line that begins with `quartz` and replace it with the currently commented line that starts with `x11`. The change is necessary because of the different R functions used in the two operating systems create a new window for the map.
@@ -121,6 +129,7 @@ I wrote this program to satisfy my own JT65 and JT9 operating interests and need
 * **Handling long and unusual callsigns**: The program callsign parser is pretty ad-hoc, and doesn't really understand extended callsigns. It muddles through, but it could do better.
 * **Overplotting**: If you hear many calls at once, they by necessity will overwrite each other on the map. You can reduce this by reducing the number of lines of log you process each run, but the program doesn't make any effort to avoid the issue.
 * **The map isn't a proper projection**: R is happy to do map projections, but doing them with a high resolution isn't very fast. Instead of slowing down the plotting for the prettiest plot, I simply plot latitude and longitude using a rectangular grid. As a result, many of the countries and continents are distorted from their actual shapes and areas.
+* **The program doesn't decode WSPR yet** . `JT-Mapper` will currently map anything it sees in the your ALL.TXT log that it recognizes, but WSPR transmissions are logged in a different file, and I'd like to color code and facet the maps according to band. That's a future project.
 
 I'm sure there are many more bugs; feel free to clone this repository and fix issues that bother you. And by all means, let me know if you modify the code to do nifty new things or to work better on other platforms. I can be reached at:
 
