@@ -83,8 +83,8 @@ Type 'q()' to quit R.
 Once you have R installed, you need to download several external libraries from within R. You can load them all at once by typing the following at the R command prompt (again, don't type the >; that's R's command prompt):
 
 ```
-> pkgs <- c('readr', 'stringr', 'sp', 'rgdal', 'ggplot2', 
-          'ggmap', 'maptools', 'lubridate', 'rworldmap', 'dplyr', dependencies=TRUE).
+> pkgs <- c('readr', 'stringr', 'ggplot2', 
+          'maptools', 'lubridate', 'rworldmap', 'dplyr', dependencies=TRUE).
 > install.packages(pkgs)
 > quit()
 ```
