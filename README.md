@@ -44,7 +44,7 @@ Note that if you use a different color scheme for coloring your WSJT-X responses
 ### My Ham Environment
 My station is modest. My rig is an old Icom 706MKIIg HF-VHF-UHF transceiver that feeds an off-center fed dipole. The computer I use is a Mac mini running Mac OS X 10.12.4. It connects to the rig through a Signalink USB audio interface.
 
-While `JT-Mapper` was designed for Mac OS X, it should run on Linux machines with only parameter changes and one comment change. Running on Windows would require a bit more tweaking, largely to work around the lack of a `tail` command to examine the ALL.TXT file.
+While `JT-Mapper` was designed for Mac OS X, it should run on Linux machines with only parameter changes and one comment change. Running on Windows would require more changes, largely to work around the lack of a `tail` command to examine the ALL.TXT file.
 
 #### On Linux and Mac OS X
 Before you can run JT-Mapper, you need to install the R programming environment and a collection of packages for plotting and data manipulation. Fortunately, all of these are open source and readily available.
@@ -120,10 +120,10 @@ At present, the program doesn't remember those values between runs unless you ch
 To run `JT-Mapper` on Linux, you must modify the `new_window` function at the top of the file. Simply comment out the line that begins with `quartz` and replace it with the currently commented line that starts with `x11`. The change is necessary because of the different R functions used in the two operating systems create a new window for the map.
 
 #### Windows Is Not Yet Supported
-Unfortunately `JT-Mapper` doesn't yet run on Windows. As noted below, the program uses the `tail` utility to read the last 50 lines of the `WSJT-X` ALL.TXT file. To run on Windows, I should probably change that code to use a function that performs the same function in R. Clearly I haven't gotten around to that yet.
+As noted below, the program uses the `tail` utility to read the last 50 lines of the `WSJT-X` ALL.TXT file. That utility doesn't exist under native Windows. I should probably change that code to use a function that performs the same function in R. Clearly I haven't gotten around to that yet.
 
 ## How the Software Works
-JT-Mapper is written in R, a high-level language typically used by data scientists for its analytical and visualization capabilities. While I developed this software on Mac OS X, it can be run on Windows and Linux as well just by tweaking some of the variables at the beginning of the program.
+JT-Mapper is written in R, a high-level language typically used by data scientists for its analytical and visualization capabilities. While I developed this software on Mac OS X, it can be run on Linux as well just by tweaking some of the variables at the beginning of the program.
 
 The basic operation of the program is a simple 5 step process:
 
@@ -146,4 +146,5 @@ I wrote this program to satisfy my own JT65 and JT9 operating interests and need
 
 I'm sure there are many more bugs; feel free to clone this repository and fix issues that bother you. And by all means, let me know if you modify the code to do nifty new things or to work better on other platforms. I can be reached at:
 
+Carl Howe
 wg1v@carlhowe.com

@@ -1,4 +1,53 @@
 #!/usr/local/bin/Rscript
+
+## version 1.0.1, 2017-05-03
+## version 1.0.0, 2017-05-01
+
+#############################################################################
+## JT-Mapper                                                               ##
+##                                                                         ##
+## When you run JT9 and JT65 using WSJT-X, have you ever wondered where    ##
+## in the world all those stations you are hearing are?                    ##
+##                                                                         ##
+## I certainly have, which is why I wrote a little R program to map them   ##
+## all in real-time. That tool is called JT-Mapper, and if                 ##
+## you're running WSJT-X on a Mac or Linux, I'd love for you to give it a  ##
+## try and let me know what you think of it.                               ##
+##                                                                         ##
+## First a few caveats for those brave souls who want to give this a       ##
+## shot:                                                                   ##
+##                                                                         ##
+## * You have to be running WSJT-X on a Mac or Linux machine. Windows      ##
+##   machines lack an essential utility for the program to work, so        ##
+##   I'm deferring Windows support.                                        ##
+##                                                                         ##
+## * You have to install the open source language R on your computer and   ##
+##   download a bunch of libraries for it. This is no big deal, but I don't##
+##   want people to think this is all just download and go. R language     ##
+##   installers are available at r-project.org.                            ##
+##                                                                         ##
+## * You have to be comfortable typing at the command line to start up     ##
+##   the program (or be comfortable sourcing it from R itself).            ##
+##                                                                         ##
+## For anyone wanting to see what this looks like, you can check out my    ##
+## public repository on github. The README.md document there has screen    ##
+## shots and many more details about the program. You can read about it    ##
+## and download the program (cleverly named JT-Mapper.R) at:               ##
+##                                                                         ##
+## http://github.com/cdhowe/JT-Mapper                                      ##
+##                                                                         ##
+## I have a full time job and travel a fair amount for work, so while I    ##
+## am happy to answer the occasional question, please be patient -- it     ##
+## can be days before I'm able to answer.                                  ##
+##                                                                         ##
+## Finally, I would like to thank Joe Taylor, whose WSJT-X program         ##
+## inspired me to write this code. I write a lot of visualizations as      ##
+## part of my big data work, and it was a treat to be able to apply this   ##
+## to ham radio through his software. Thank you Joe.                       ##
+##                                                                         ##
+## Have fun, Carl WG1V FN42                                                ##
+#############################################################################
+
 ## Usage: ./JT-mapper numberlines callsign location
 
 suppressWarnings(suppressMessages(library(readr)))
@@ -175,9 +224,9 @@ grid_to_latlon <- function(grid)
 ## return value log.df is a dataframe of calls, times, grids, and labelcolors                  ##
 #################################################################################################
 
-loglines_to_df <- function(loglines) {
-    loglines <- str_trim(loglines)
-    loglines <- grep("RR73$", loglines, invert=TRUE, value=TRUE)        # RR73 is a signoff, not a grid locator 
+loglines_to_df <- function(lines) {
+    lines <- str_trim(lines)
+    loglines <- grep("RR73$", lines, invert=TRUE, value=TRUE)        # RR73 is a signoff, not a grid locator 
     loglines <- grep("Transmitting", loglines, invert=TRUE, value=TRUE) # Transmitting lines are different format
     locations <- grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE)       # include only lines that have a locator at the end
 
@@ -187,6 +236,9 @@ loglines_to_df <- function(loglines) {
     ## gridsquare info and add them to the list
 
     nonlocations <- na.omit(grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE, invert=TRUE))
+    rr73s <- grep("RR73$", lines, value=TRUE)        # find RR73s, which aren't locations
+    nonlocations <- c(nonlocations, rr73s)
+    
     nonlocations <- gsub(" [A-Ra-r]{0,3}[-+]*\\d{0,2}$", "", nonlocations) # Take away the signal report or 73 at the end
     nonlocation_call <- gsub(".* ", "", nonlocations)                    # leave just the callsign in the middle
     nonlocation_state <- ifelse(grepl(mycall, nonlocations), "Calling", "Heard")
