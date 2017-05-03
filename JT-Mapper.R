@@ -1,16 +1,16 @@
 #!/usr/local/bin/Rscript
+## Usage: ./JT-mapper numberlines callsign location
 
-library(readr)
-library(stringr)
-library(sp)
-library(rgdal)
-library(ggplot2)
-library(ggmap)
-library(maptools)
-library(lubridate)
-library(rworldmap)
-library(dplyr)
-
+suppressWarnings(suppressMessages(library(readr)))
+suppressWarnings(suppressMessages(library(stringr)))
+# suppressWarnings(suppressMessages(library(sp)))
+# suppressWarnings(suppressMessages(library(rgdal)))
+suppressWarnings(suppressMessages(library(ggplot2)))
+# suppressWarnings(suppressMessages(library(ggmap)))
+suppressWarnings(suppressMessages(library(maptools)))
+suppressWarnings(suppressMessages(library(lubridate)))
+suppressWarnings(suppressMessages(library(rworldmap)))
+suppressWarnings(suppressMessages(library(dplyr, warn.conflicts=FALSE)))
                                         # Parameters for program
 mycall <- "WG1V"                        # my station callsign
 mygrid <- "FN42fk"                      # my station location
@@ -18,11 +18,33 @@ wsjtxlines <- "50"                     # how many recent log lines to plot
 cqcolor <- "green4"
 heardcolor <- "palegreen"
 callingcolor <- "red"
+oldcolor <- "gray90"
+
+args <- commandArgs(trailingOnly=TRUE)
+if (length(args) >= 1) {
+    wsjtxlines <- as.numeric(args[1])
+    if (length(args) >= 2) {
+        mycall <- args[2]
+        if (length(args) >= 3) {
+            mygrid <- args[3]
+            if (length(args) > 3) {
+                print ("Usage: ./JTmapper numberlines callsign location")
+            }
+        }
+    }
+}
 
 call_grid_df <- data.frame("grid"=mygrid, "call"=mycall) #initialize
 
 # loglocation <- "/Users/chowe/Documents/Ham Radio/mapping/ALL.TXT"
 loglocation <- "/Users/chowe/Library/Application Support/WSJT-X/ALL.TXT"
+
+new_window <- function(width, height, dpi) {
+    ## for Mac OS X
+    quartz(width=width, height=height, dpi=dpi)
+    ## for Linux
+#    x11(width=width, height=height, dpi=dpi)
+}
 
 # returns the new offset of the terminator in the string starting at 
 gettoken <- function(string, offset, terminator)
@@ -110,6 +132,7 @@ charToInt <- function(x) {
 # Convert grid square to latitude and longitude
 grid_to_latlon <- function(grid)
 {
+  grid <- as.character(grid)
   if (is.na(grid) | nchar(grid) < 4) {
        return(data.frame("lat" = NA, "lon" = NA))
   }
@@ -166,16 +189,20 @@ loglines_to_df <- function(loglines) {
     nonlocations <- na.omit(grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE, invert=TRUE))
     nonlocations <- gsub(" [A-Ra-r]{0,3}[-+]*\\d{0,2}$", "", nonlocations) # Take away the signal report or 73 at the end
     nonlocation_call <- gsub(".* ", "", nonlocations)                    # leave just the callsign in the middle
+    nonlocation_state <- ifelse(grepl(mycall, nonlocations), "Calling", "Heard")
     nonlocation_times <- str_extract(nonlocations, "^\\d{4}")
 
     ## We need to look for our own call in case the station is calling us with a signal report
     
-    nonlocation_state <- "Heard"
     nonlocation_df <- data.frame("call" = nonlocation_call, "time" = nonlocation_times,
                                  "state" = nonlocation_state,
                                  stringsAsFactors=FALSE)
     located_lines <- merge(nonlocation_df, call_grid_df, by="call", all.x=TRUE, sort=FALSE)
     located_calls <- na.omit(located_lines)
+    debug("&&&&&& LOCATED LINES &&&&&&&&&")
+    debug(located_lines)
+    debug("@@@@@@@ LOCATED CALLS @@@@@@@")
+    debug(located_calls)
 
     ## OK, now we can do the mainline parsing of the lines that have locations at the end
     
@@ -193,14 +220,14 @@ loglines_to_df <- function(loglines) {
     combinedlog_df <- rbind(located_calls, log_df)
     sortedlog_df <- combinedlog_df %>% arrange(time)
 
-    newcalls <- data.frame("grid" = sortedlog_df$grid, "call" = sortedlog_df$call)
+    newcalls <- data.frame("grid" = sortedlog_df$grid, "call" = sortedlog_df$call, stringsAsFactors=FALSE)
     combinedcalls <- rbind(call_grid_df, newcalls)
-    call_grid_df <- unique(combinedcalls)
+    call_grid_df <<- unique(combinedcalls) # update call_grid_df in global context
 
-    print("******* CALL GRID *********")
-    print(call_grid_df)
-    print("###### SORTED LOG #######")
-    print(sortedlog_df)
+    debug("******* CALL GRID *********")
+    debug(call_grid_df)
+    debug("###### SORTED LOG #######")
+    debug(sortedlog_df)
 
     return(sortedlog_df)
 }
@@ -210,7 +237,7 @@ loglines_to_df <- function(loglines) {
 #########################
 
 theme_set(theme_bw())
-quartz(width=8, height=4, dpi=100)
+new_window(width=8, height=4, dpi=100) ## create window to plot in
 
 mystation.df <- data.frame("call" = mycall, "grid" = mygrid, stringsAsFactors=FALSE)
 xy <- grid_to_latlon(mygrid)
@@ -377,7 +404,7 @@ while (1) {
            ## only contains contacts in the latest reception period.
            ## We'll only display the call signs for the latest signals
            
-#           latest_time <- max(log.df$datetime)
+                                        #           latest_time <- max(log.df$datetime)
            timestring <- gsub("...$", "", as.character(now(tzone="GMT")))
            latest_time <- parse_date_time(timestring, "%y-%m-%d %H:M")
            latest_log.df <- filter(log.df, datetime == latest_time)
@@ -403,15 +430,16 @@ while (1) {
            ###################################
            ## OK, it's time to plot the map ##
            ###################################
-           p <- p + geom_text(data=older_log.df, 
-                                aes(x=lon, y=lat+maplatrange*.025,
+           p <- p + geom_label(data=older_log.df, 
+                                aes(x=lon, y=lat+maplatrange*.04,
                                     label=call, alpha=age),
-                                group=NA, size=2.5, color="gray20")
+                               group=NA, size=2.3, fill=oldcolor,
+                               color="gray20")
            p <- p + geom_label(data=latest_heard.df, 
                                 aes(x=lon, y=lat+maplatrange*.04,
                                     label=call),
-                               group=NA, size=2.5, fill=heardcolor,
-                               fontface="bold", color="gray60")
+                               group=NA, size=2.6, fill=heardcolor,
+                               fontface="bold", color="gray40")
            p <- p + geom_label(data=latest_cqs.df, 
                                 aes(x=lon, y=lat+maplatrange*.04,
                                     label=call),
