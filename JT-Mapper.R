@@ -1,5 +1,6 @@
 #!/usr/local/bin/Rscript
 
+## version 1.0.2, 2017-07-09 wt8p - added option for configuration file
 ## version 1.0.1, 2017-05-03
 ## version 1.0.0, 2017-05-01
 
@@ -60,14 +61,15 @@ suppressWarnings(suppressMessages(library(maptools)))
 suppressWarnings(suppressMessages(library(lubridate)))
 suppressWarnings(suppressMessages(library(rworldmap)))
 suppressWarnings(suppressMessages(library(dplyr, warn.conflicts=FALSE)))
-                                        # Parameters for program
-mycall <- "WG1V"                        # my station callsign
-mygrid <- "FN42fk"                      # my station location
-wsjtxlines <- "50"                     # how many recent log lines to plot
-cqcolor <- "green4"
-heardcolor <- "palegreen"
-callingcolor <- "red"
-oldcolor <- "gray90"
+
+configfile = file.path(Sys.getenv("HOME"),".jtmapper.R")
+if (file.exists(configfile)) {
+	tryCatch(source(configfile))
+} else { 
+   # file.copy(".jtmapper.R",configfile, overwrite = FALSE)
+   print("Please modify .jtmapper.R with your call sign and grid, then copy it into your home directory.")
+   quit("yes")
+}
 
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) >= 1) {
@@ -85,8 +87,6 @@ if (length(args) >= 1) {
 
 call_grid_df <- data.frame("grid"=mygrid, "call"=mycall) #initialize
 
-# loglocation <- "/Users/chowe/Documents/Ham Radio/mapping/ALL.TXT"
-loglocation <- "/Users/chowe/Library/Application Support/WSJT-X/ALL.TXT"
 
 new_window <- function(width, height, dpi) {
     ## for Mac OS X
