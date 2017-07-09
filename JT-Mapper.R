@@ -62,13 +62,50 @@ suppressWarnings(suppressMessages(library(lubridate)))
 suppressWarnings(suppressMessages(library(rworldmap)))
 suppressWarnings(suppressMessages(library(dplyr, warn.conflicts=FALSE)))
 
-configfile = file.path(Sys.getenv("HOME"),".jtmapper.R")
+
+# Attempt to be OS-independent in the WSJT-X log file.  
+# *NOTE* I am guessing at what the Linux path is.
+
+# Get the operating system.
+os = Sys.info()[['sysname']]
+
+if (os == "Darwin") { #Mac
+   wsjtpath = { file.path(path.expand("~"),"Library/Application Support/WSJT-X") }
+} else if (os == "Windows") { 
+   # deal with backslashes in environment variables.  Not sure how to map system
+   # drive, so this will fail for people who install on other drives.
+   # On my virtual machine, HOME is set to \\Mac\Home\Documents, which is why 
+   # I don't just use ~
+   wsjtpath = { 
+    file.path(
+      chartr("\\","/",
+        file.path(# Sys.getenv("HOMEDRIVE"),
+		  Sys.getenv("HOMEPATH"),"AppData/Local/WSJT-X")
+      )
+    ) 
+   }
+} else  { # linux, guessing.
+   wsjtpath = { file.path(path.expand("~"),"wsjt-x") } 
+}
+loglocation = file.path(wsjtpath,"ALL.TXT")
+
+
+# Prepopulate environment variables from configuration file.  If we can't find these,
+cfgfile = ".jtmapper.R"
+configfile = file.path(Sys.getenv("HOME"),cfgfile)
+# Check home directory.
 if (file.exists(configfile)) {
-	tryCatch(source(configfile))
-} else { 
-   # file.copy(".jtmapper.R",configfile, overwrite = FALSE)
-   print("Please modify .jtmapper.R with your call sign and grid, then copy it into your home directory.")
-   quit("yes")
+       print(configfile)
+       tryCatch(source(configfile))
+# Check program directory.
+} else if (file.exists(cfgfile)) {
+       print(cfgfile)
+       tryCatch(source(cfgfile))
+} else {
+       print("nope.")
+	mycall      = "WG1V"
+	mygrid      = "FN42fk"
+	loglocation = "ALL.txt"
 }
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -84,6 +121,7 @@ if (length(args) >= 1) {
         }
     }
 }
+
 
 call_grid_df <- data.frame("grid"=mygrid, "call"=mycall) #initialize
 
