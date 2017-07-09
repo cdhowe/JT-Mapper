@@ -88,7 +88,11 @@ Once you have R installed, you need to download several external libraries from 
 > install.packages(pkgs)
 > quit()
 ```
-Once you have all the packages installed, you'll need to modify the first line of `JT-Mapper.R` to point to the location of Rscript on your machine. On my Mac, it's in /usr/local/bin, so my first line reads:
+Once you have all the packages installed, you'll may modify the .jtmapper.R file,
+adding your call sign and grid.  You can copy this into your home directory, if there
+are multiple users of this machine.
+
+You, *may* need to modify the first line of `JT-Mapper.R` to point to the location of Rscript on your machine. On my Mac, it's in /usr/local/bin, so my first line reads:
 
 ```
 #!/usr/local/bin/Rscript
@@ -107,14 +111,14 @@ Once you've made that small change to `JT-Mapper.R`, type the following steps at
 % ./JT-Mapper.R number-of-lines your-call-sign your-grid
 ```
 
-If you don't include a number of lines, the number of lines will default to 50. If you don't type in a callsign and grid, JT-Mapper will use default variables values in the program, namely my callsign (WG1V) and my grid location (FN42). To make JT-Mapper always use your callsign and grid locator, open a text editor (TextEdit works well on Mac OS X), and change the variables `mycall` and `mygrid`.
+If you don't include a number of lines, the number of lines will default to 50. If you don't type in a callsign and grid, JT-Mapper will use default variables values in the .jtmapper.R, namely my callsign (WG1V) and my grid location (FN42). To make JT-Mapper always use your callsign and grid locator, open a text editor (TextEdit or vi work well on Mac OS X), and change the variables `mycall` and `mygrid` in the .jtmapper file, and copy it to your home directory.
 
-Once you have `wsjtxlines`, `mycall`, and `mygrid` set properly in the program itself, all you need to do to run JT-Mapper is type:
+Once you have `wsjtxlines`, `mycall`, and `mygrid` set properly, all you need to do to run JT-Mapper is type:
 
 ```
 % ./JT-Mapper.R
 ```
-At present, the program doesn't remember those values between runs unless you change the variables in the program itself.
+At present, the program doesn't remember those values between runs unless you store them in the .jtmapper.R file.
 
 #### Modification for Linux
 To run `JT-Mapper` on Linux, you must modify the `new_window` function at the top of the file. Simply comment out the line that begins with `quartz` and replace it with the currently commented line that starts with `x11`. The change is necessary because of the different R functions used in the two operating systems create a new window for the map.

@@ -1,5 +1,6 @@
 #!/usr/local/bin/Rscript
 
+## version 1.0.2, 2017-07-09 wt8p - added option for configuration file
 ## version 1.0.1, 2017-05-03
 ## version 1.0.0, 2017-05-01
 
@@ -60,14 +61,52 @@ suppressWarnings(suppressMessages(library(maptools)))
 suppressWarnings(suppressMessages(library(lubridate)))
 suppressWarnings(suppressMessages(library(rworldmap)))
 suppressWarnings(suppressMessages(library(dplyr, warn.conflicts=FALSE)))
-                                        # Parameters for program
-mycall <- "WG1V"                        # my station callsign
-mygrid <- "FN42fk"                      # my station location
-wsjtxlines <- "50"                     # how many recent log lines to plot
-cqcolor <- "green4"
-heardcolor <- "palegreen"
-callingcolor <- "red"
-oldcolor <- "gray90"
+
+
+# Attempt to be OS-independent in the WSJT-X log file.  
+# *NOTE* I am guessing at what the Linux path is.
+
+# Get the operating system.
+os = Sys.info()[['sysname']]
+
+if (os == "Darwin") { #Mac
+   wsjtpath = { file.path(path.expand("~"),"Library/Application Support/WSJT-X") }
+} else if (os == "Windows") { 
+   # deal with backslashes in environment variables.  Not sure how to map system
+   # drive, so this will fail for people who install on other drives.
+   # On my virtual machine, HOME is set to \\Mac\Home\Documents, which is why 
+   # I don't just use ~
+   wsjtpath = { 
+    file.path(
+      chartr("\\","/",
+        file.path(# Sys.getenv("HOMEDRIVE"),
+		  Sys.getenv("HOMEPATH"),"AppData/Local/WSJT-X")
+      )
+    ) 
+   }
+} else  { # linux, guessing.
+   wsjtpath = { file.path(path.expand("~"),"wsjt-x") } 
+}
+loglocation = file.path(wsjtpath,"ALL.TXT")
+
+
+# Prepopulate environment variables from configuration file.  If we can't find these,
+cfgfile = ".jtmapper.R"
+configfile = file.path(Sys.getenv("HOME"),cfgfile)
+# Check home directory.
+if (file.exists(configfile)) {
+       print(configfile)
+       tryCatch(source(configfile))
+# Check program directory.
+} else if (file.exists(cfgfile)) {
+       print(cfgfile)
+       tryCatch(source(cfgfile))
+} else {
+       print("nope.")
+	mycall      = "WG1V"
+	mygrid      = "FN42fk"
+	loglocation = "ALL.txt"
+}
 
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) >= 1) {
@@ -83,10 +122,9 @@ if (length(args) >= 1) {
     }
 }
 
+
 call_grid_df <- data.frame("grid"=mygrid, "call"=mycall) #initialize
 
-# loglocation <- "/Users/chowe/Documents/Ham Radio/mapping/ALL.TXT"
-loglocation <- "/Users/chowe/Library/Application Support/WSJT-X/ALL.TXT"
 
 new_window <- function(width, height, dpi) {
     ## for Mac OS X
