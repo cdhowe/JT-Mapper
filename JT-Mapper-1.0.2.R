@@ -423,6 +423,7 @@ while (1) {
 
            maxage <- 1                  # max age in hours to be displayed
            log.df$date <- date(now(tzone="GMT"))
+           debug(sprintf("DateTime parsing\n%s", paste(log.df$date, log.df$time, sep=" ")))
            log.df$datetime <- parse_date_time(paste(log.df$date, log.df$time, sep=" "), "%y-%m-%d %HM")
            log.df$age <-  now(tzone="GMT") - log.df$datetime
            log.df$age <- ifelse(log.df$age < 0, 1000, log.df$age)
