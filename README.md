@@ -84,7 +84,7 @@ Once you have R installed, you need to download several external libraries from 
 
 ```
 > pkgs <- c('readr', 'stringr', 'ggplot2', 
-          'maptools', 'lubridate', 'rworldmap', 'dplyr', dependencies=TRUE).
+          'maptools', 'lubridate', 'rworldmap', 'dplyr', dependencies=TRUE)
 > install.packages(pkgs)
 > quit()
 ```
