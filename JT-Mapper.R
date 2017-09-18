@@ -1,5 +1,6 @@
 #!/usr/local/bin/Rscript
 
+## version 1.0.2  2017-07-27 Added new argument parser, modified timing to 15 second intervals to accommodate FT8 mode
 ## version 1.0.1, 2017-05-03
 ## version 1.0.0, 2017-05-01
 
@@ -50,6 +51,7 @@
 
 ## Usage: ./JT-mapper numberlines callsign location
 
+suppressWarnings(suppressMessages(library(getopt)))
 suppressWarnings(suppressMessages(library(readr)))
 suppressWarnings(suppressMessages(library(stringr)))
 # suppressWarnings(suppressMessages(library(sp)))
@@ -60,33 +62,27 @@ suppressWarnings(suppressMessages(library(maptools)))
 suppressWarnings(suppressMessages(library(lubridate)))
 suppressWarnings(suppressMessages(library(rworldmap)))
 suppressWarnings(suppressMessages(library(dplyr, warn.conflicts=FALSE)))
-                                        # Parameters for program
-mycall <- "WG1V"                        # my station callsign
-mygrid <- "FN42fk"                      # my station location
-wsjtxlines <- "50"                     # how many recent log lines to plot
-cqcolor <- "green4"
-heardcolor <- "palegreen"
-callingcolor <- "red"
-oldcolor <- "gray90"
 
-args <- commandArgs(trailingOnly=TRUE)
-if (length(args) >= 1) {
-    wsjtxlines <- as.numeric(args[1])
-    if (length(args) >= 2) {
-        mycall <- args[2]
-        if (length(args) >= 3) {
-            mygrid <- args[3]
-            if (length(args) > 3) {
-                print ("Usage: ./JTmapper numberlines callsign location")
-            }
-        }
-    }
-}
+# These are the default values for the program. All of these can be overridden with
+# command line arguments
 
-call_grid_df <- data.frame("grid"=mygrid, "call"=mycall) #initialize
-
-# loglocation <- "/Users/chowe/Documents/Ham Radio/mapping/ALL.TXT"
 loglocation <- "/Users/chowe/Library/Application Support/WSJT-X/ALL.TXT"
+mycall        <- "WG1V"                      # my station callsign
+mygrid        <- "FN42fk"                    # my station location
+wsjtxlines    <- "50"                    # how many recent log lines to plot
+cqcolor       <- "green4"
+heardcolor    <- "palegreen"
+callingcolor  <- "red"
+oldcolor      <- "gray90"
+debugflag     <- FALSE
+
+
+###################################################################################
+###################################################################################
+## The following are a collection of helper functions for dealing with the logs. ##
+## Not all are necessarily used.                                                 ##
+###################################################################################
+###################################################################################
 
 new_window <- function(width, height, dpi) {
     ## for Mac OS X
@@ -122,7 +118,9 @@ MakeDescription <- function(df) {
 }
 
 debug <- function(x) {
-#    print(x)
+  if (debugflag) {
+       print(x)
+  }
 }
 
 # Read in ADIF file
@@ -226,7 +224,7 @@ grid_to_latlon <- function(grid)
 
 loglines_to_df <- function(lines) {
     lines <- str_trim(lines)
-    loglines <- grep("RR73$", lines, invert=TRUE, value=TRUE)        # RR73 is a signoff, not a grid locator 
+    loglines <- grep("RR73$", lines, invert=TRUE, value=TRUE)           # RR73 is a signoff, not a grid locator 
     loglines <- grep("Transmitting", loglines, invert=TRUE, value=TRUE) # Transmitting lines are different format
     locations <- grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE)       # include only lines that have a locator at the end
 
@@ -251,14 +249,15 @@ loglines_to_df <- function(lines) {
                                  stringsAsFactors=FALSE)
     located_lines <- merge(nonlocation_df, call_grid_df, by="call", all.x=TRUE, sort=FALSE)
     located_calls <- na.omit(located_lines)
-    debug("&&&&&& LOCATED LINES &&&&&&&&&")
-    debug(located_lines)
-    debug("@@@@@@@ LOCATED CALLS @@@@@@@")
-    debug(located_calls)
+#    debug("&&&&&& LOCATED LINES &&&&&&&&&")
+#    debug(located_lines)
+#    debug("@@@@@@@ LOCATED CALLS @@@@@@@")
+#    debug(located_calls)
 
     ## OK, now we can do the mainline parsing of the lines that have locations at the end
     
-    times <- str_extract(locations, "^\\d{4}")                # Extract the 4 digit time at the beginning of the line
+    times <- str_extract(locations, "^\\d{4,6}")                # Extract the time at the beginning of the line
+#    times[str_length(times) == 4] = paste0(times[str_length(times) == 4], "48")
     state <- ifelse(grepl(" CQ ", locations), "CQ", 
              ifelse(grepl(paste0(" ", mycall, " "), locations), "Calling", "Heard")) # Find CQs
     callsign_and_grid_regex <- "[A-Za-z0-9/]+ [A-Ra-r]{2}\\d{2}$"
@@ -276,17 +275,54 @@ loglines_to_df <- function(lines) {
     combinedcalls <- rbind(call_grid_df, newcalls)
     call_grid_df <<- unique(combinedcalls) # update call_grid_df in global context
 
-    debug("******* CALL GRID *********")
-    debug(call_grid_df)
+#    debug("******* CALL GRID *********")
+#    debug(call_grid_df)
     debug("###### SORTED LOG #######")
     debug(sortedlog_df)
 
     return(sortedlog_df)
 }
 
-#########################
-## Program starts here ##
-#########################
+##############################
+## Main Program starts here ##
+##############################
+
+
+# Parse the arguments given on the command line using the getopt package
+argument_spec <- matrix(c(
+    'help',        'h', 0, "logical",
+    'debug',       'd', 0, "logical",
+    'mycall',      'c', 1, "character",
+    'mygrid',      'g', 1, "character",
+    'logfile',     'l', 1, "character",
+    'numlines',    'n', 1, "integer",
+    'cqcolor',     'q', 1, "character",
+    'heardcolor',  'r', 1, "character",
+    'callingcolor','a', 1, "character",
+    'oldcolor',    'o', 1, "character"
+), byrow=TRUE, ncol=4)
+
+opt <- getopt(argument_spec)
+
+# process the help command
+if ( !is.null(opt$help) ) {
+  cat(getopt(argument_spec, usage=TRUE));
+  q(status=1);
+}
+
+# Now we reset our parameters for arguments given
+if (!is.null(opt$mycall)       ) { mycall       = opt$mycall       }
+if (!is.null(opt$mygrid)       ) { mygrid       = opt$mygrid       }
+if (!is.null(opt$logfile)      ) { loglocation  = opt$logfile      }
+if (!is.null(opt$numlines)     ) { wsjtxlines   = opt$numlines     }
+if (!is.null(opt$cqcolor)      ) { cqcolor      = opt$cqcolor      }
+if (!is.null(opt$heardcolor)   ) { heardcolor   = opt$heardcolor   }
+if (!is.null(opt$callingcolor) ) { callingcolor = opt$callingcolor }
+if (!is.null(opt$oldcolor)     ) { oldcolor     = opt$oldcolor     }
+if (!is.null(opt$debug   )     ) { debugflag        = TRUE             }
+
+call_grid_df <- data.frame("grid"=mygrid, "call"=mycall) #initialize
+
 
 theme_set(theme_bw())
 new_window(width=8, height=4, dpi=100) ## create window to plot in
@@ -330,30 +366,53 @@ sm <- sm + geom_point(data=mystation.df,
 oldlog = ""
 callsign_locator.db <- NULL
 
-targetclocksecond <- 52
+
+targetclockseconds <- c(14, 29, 44, 51, 59)       # second times we should wake up and refresh if needed
 while (1) {
+  timeofnow       <- now(tzone="GMT")
+  datetimenow     <- parse_date_time(timeofnow, "%y-%m-%d %H:%M:%S")
   ## Read the last N lines of the full log, usually ALL.TXT
   logread <- system(paste0('tail -', wsjtxlines, ' "', loglocation, '"'), 
                     intern=TRUE)
-  ## Has this log changed since last time we read it?
-  if (oldlog[length(oldlog)] == logread[length(logread)]) {
-      currentseconds <- floor(second(now()))
-      if (targetclocksecond - currentseconds > 0) {
-          Sys.sleep(targetclocksecond - currentseconds)  # sleep until 53 seconds past the hour; log should be updated by then
-          debug(paste0("Pos: Sleeping for ", targetclocksecond - currentseconds))
-      } else {
-          Sys.sleep(targetclocksecond - currentseconds + 60)
-          debug(paste0("Neg: Sleeping for ", targetclocksecond - currentseconds + 60))
-      }
-    next
-  }
+  ## Has the last entry for the log changed since last time we read it?
+    debug(paste0(timeofnow, "----- LOG READ ------"))
+    debug(sprintf("noldlog last entry = %s", oldlog[length(oldlog)]))
+    debug(sprintf("logread last entry = %s", logread[length(logread)]))
+    if (oldlog[length(oldlog)] == logread[length(logread)]) {
+      currentseconds <- floor(second(datetimenow))  # if not, wait until our next target time
+      timediff       <- targetclockseconds - currentseconds
+      timesremaining <- timediff[timediff > 0]
+      sleeptime <- ifelse(length(timesremaining) > 0, min(timesremaining), 15)
+      if (is.na(sleeptime) | is.infinite(sleeptime) | sleeptime == 0) { sleeptime <- 1 }
+      debug(sprintf("Current seconds = %d, Sleeping for %d", currentseconds, sleeptime))
+      Sys.sleep(sleeptime) 
+      next
+    }
+
+################################################################################################
+## We have something in the log to process. Now we need to see if we have band and           ##
+## mode information. We're going to search our log backwards for a mode change.              ##
+##                                                                                           ##
+## We have a couple of challenges to deal with though. We don't get any indication in the    ##
+## log when the user QSYs to 6 meters, and there may be no mode change within the last       ##
+## N lines we read. So if we don't find a mode change we'll have to assume mode and frequency ##
+## until we do find one. That means we get incorrect results sometims.                        ##
+################################################################################################
+
+
+  mode = "Unknown"
   log <- str_trim(logread)              # Get rid of trailing spaces
-  for (i in length(log):1) {
-    # See if we have a date at the beginning; that flags beginning of this band or mode
-    if (grepl("^\\d\\d\\d\\d-\\d\\d-\\d\\d", log[i])) break;
+  for (i in length(log):1)  {           # See if we have a date at the beginning; that flags beginning of this band or mode
+                                       
+    if (grepl("^\\d\\d\\d\\d-\\d\\d-\\d\\d", log[i])) {  # found a date string
+            bstring <- log[i]
+            mode <- str_extract(bstring, "[A-Z0-9+]+$")
+            debug(sprintf("Mode = %s", mode))
+          break;
+    }
   }
   if (i == 1) {                         # didn't find a band change note
-      legendtext <- now(tzone="GMT")
+      legendtext <- paste(now(tzone="GMT"), mode, sep=" ")
   } else {
       legendtext <- log[i]
   }
@@ -373,30 +432,35 @@ while (1) {
            log.df$lat <- as.numeric(xy[1,])
            log.df$lon <- as.numeric(xy[2,])
 
-           maxage <- 1          # max age in hours to be displayed
-           log.df$date <- date(now(tzone="GMT"))
-           log.df$datetime <- parse_date_time(paste(log.df$date, log.df$time, sep=" "), "%y-%m-%d %HM")
-           log.df$age <-  now(tzone="GMT") - log.df$datetime
-           log.df$age <- ifelse(log.df$age < 0, 1000, log.df$age)
+           maxage          <- 1                  # max age in hours to be displayed
+           log.df$date     <- date(timeofnow)
+           log.df$time     <- str_sub(paste0(log.df$time, "00"), 1, 6)   # ensure we get exactly 6 character time
+           log.df$datetime <- parse_date_time(paste(log.df$date, log.df$time, sep=" "), "%y-%m-%d %H%M%S")
+
+           debug(sprintf("Current datetime: %s", datetimenow))
+#           debug(sprintf("DateTime parsing: %s", paste(log.df$date, log.df$time, sep=" ")))
+
+           log.df$age      <-  timeofnow - log.df$datetime
+           log.df$age      <- ifelse(log.df$age < 0, 1000, log.df$age)
            
            ratio = 2.6      # longitude should be 3x latitude in cartesian
            minlat <- min(log.df$lat, na.rm=TRUE)
            minlon <- min(log.df$lon, na.rm=TRUE)
            maxlat <- max(log.df$lat, na.rm=TRUE)
            maxlon <- max(log.df$lon, na.rm=TRUE)
-           debug(sprintf("orig bounding box =[(%f.1, %f.1), (%f.1, %f.1)]",
-                        minlon, minlat,maxlon, maxlat))
+#          debug(sprintf("orig bounding box =[(%.1f, %.1f), (%.1f, %.1f)]",
+#                        minlon, minlat,maxlon, maxlat))
 
-           debug("LOG.DF\n**********************************************")
+           debug("**************LOG.DF*************")
            debug(log.df)
-           debug("END\n*************************************************")
+           debug("**************END****************")
 
-           lowlat <- max(minlat - 1, -90)
+           lowlat  <- max(minlat - 1, -90)
            highlat <- min(maxlat + 1, 85)
-           lowlon <- max(minlon - 1, -180)
+           lowlon  <- max(minlon - 1, -180)
            highlon <- min(maxlon + 1, 180)
-           debug(sprintf("low lat, lowlon, highlat, highlon = [(%f.1, %f.1), (%f.1, %f.1)]",
-                         lowlat, lowlon, highlat, highlon))
+#           debug(sprintf("low lat, lowlon, highlat, highlon = [(%.1f, %.1f), (%.1f, %.1f)]",
+#                         lowlat, lowlon, highlat, highlon))
            
            lonrange0 <- highlon - lowlon
            latrange0 <- highlat - lowlat
@@ -419,9 +483,9 @@ while (1) {
                latrange <- minlatrange
                }
 
-           debug(sprintf("plot bounding box [%f.1, %f.1], [%f.1, %f.1]", lowlon, lowlat, highlon, highlat))
-           debug(sprintf("lonrange0=%f.1, latrange0=%f.1, lonrange=%f.1, latrange=%f.1",
-                         lonrange0, latrange0, lonrange, latrange))
+#           debug(sprintf("plot bounding box [%.1f, %.1f], [%.1f, %.1f]", lowlon, lowlat, highlon, highlat))
+#           debug(sprintf("lonrange0=%.1f, latrange0=%.1f, lonrange=%.1f, latrange=%.1f",
+#                         lonrange0, latrange0, lonrange, latrange))
 
            ## We really have two cases here:
            ## When we adjust for our desired aspect ratio, we want our latitude and longitude
@@ -447,29 +511,54 @@ while (1) {
 
            maplonrange <- mapmaxlon - mapminlon
            maplatrange <- mapmaxlat - mapminlat
-           debug(sprintf("map bounding box [%f.1, %f.1], [%f.1, %f.1]", mapminlon, mapminlat, mapmaxlon, mapmaxlat))
-           debug(sprintf("transform from [(%f.1, %f.1), (%f.1, %f.1)] TO [(%f.1, %f.1), (%f.1, %f.1)]",
-                         lowlat, lowlon, highlat, highlon,
-                         mapminlat, mapminlon, mapmaxlat, mapmaxlon))
+#           debug(sprintf("map bounding box [%.1f, %.1f], [%.1f, %.1f]", mapminlon, mapminlat, mapmaxlon, mapmaxlat))
+#           debug(sprintf("transform from [(%.1f, %.1f), (%.1f, %.1f)] TO [(%.1f, %.1f), (%.1f, %.1f)]",
+#                         lowlat, lowlon, highlat, highlon,
+#                         mapminlat, mapminlon, mapmaxlat, mapmaxlon))
 
            ## We're now going to create a new data frame that 
            ## only contains contacts in the latest reception period.
+           ## The reception period is last 15 seconds for FT8
+           ## 60 seconds for all else.
            ## We'll only display the call signs for the latest signals
            
-                                        #           latest_time <- max(log.df$datetime)
-           timestring <- gsub("...$", "", as.character(now(tzone="GMT")))
-           latest_time <- parse_date_time(timestring, "%y-%m-%d %H:M")
-           latest_log.df <- filter(log.df, datetime == latest_time)
-           latest_cqs.df <- filter(latest_log.df, state == "CQ")
-           latest_heard.df <- filter(latest_log.df, state == "Heard")
+           ##           latest_time <- max(log.df$datetime)
+           timestring        <- as.character(timeofnow)
+           latest_time       <- datetimenow      # use Date object for math
+           debug(sprintf("Latest time = %s", timestring))
+           
+           ## Compute how many seconds to subtract to derive the
+           ## beginning of the reception period.
+
+           adj <- second(latest_time)           
+           debug(sprintf("Initial Adj = %d", adj))
+           if (mode == "FT8" | mode == "Unknown") {
+             while (adj > 15) { # adjust to closest 15 second boundary
+               adj <- adj - 15
+             }
+           }
+           if (adj == 0) {
+             adj = 15           # top of the minute, look back to 45
+           }
+           debug(sprintf("Adj = %d", adj))
+           latest_time <- latest_time - adj    # go back to beginning of period           
+           latest_log.df     <- filter(log.df, datetime == latest_time)
+           debug(sprintf("@@@@@ log.df looking for %s @@@@@@", latest_time))
+           debug(log.df)
+
+           debug(sprintf("@@@@@ Latest_log.df finding time %s @@@@@@", latest_time))
+           debug(latest_log.df)
+           debug("@@@@@ End of Latest_log.df @@@@@@")
+           latest_cqs.df     <- filter(latest_log.df, state == "CQ")
+           latest_heard.df   <- filter(latest_log.df, state == "Heard")
            latest_calling.df <- filter(latest_log.df, state == "Calling")
-           older_log.df <- filter(log.df, datetime != latest_time)
-           p <- wm
+           older_log.df      <- filter(log.df, datetime != latest_time)
+           p <- wm                      # plot defaults to world map
            if (!is.na(lowlat) & !is.na(highlat) &
                !is.na(lowlon) & !is.na(highlon)) {
                    if (lowlat > 30 & highlat < 45 & 
                        lowlon > -125 & highlon < -63) {
-                       p <- sm    # can use the states map for the US
+                       p <- sm          # can use the states map for the US
                    }
            }
 
