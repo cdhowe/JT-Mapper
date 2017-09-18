@@ -1,9 +1,18 @@
 # JT-Mapper: Real-time JT65 and JT9 Maps
 ## Author: Carl Howe, WG1V
 
+## Changes in Version 1.0.2
+I've added two major changes in this release:
+
+* JT-Mapper now has real argument parsing to allow you to specify log file location, enable debugging, change colors, and a host of other options. Type `./JT-Mapper.R --help` or `./JT-Mapper.R -h` for the full set of options.
+* JT-Mapper now can parse and update its map in 15 second intervals when WSJT-X is in FT8 mode.
+
+These changes should make the program a bit more useful for today's WSJT-X user. I only recently got up on WSJT-X 1.8RC1 so I hadn't noticed FT8 mode until a few weeks ago.
+
+## Version 1.0
 ![](help-images/splashscreen.jpg)
 
-The development of K1JT's JT65 and JT9 protocols have reinvented digital ham radio. Thanks to Joe's and the efforts of other developers of the `WSJT-X` software program, hams now can work the world with modest transceivers and a computer with an audio card.
+The development of K1JT's JT65 and JT9 protocols have reinvented digital ham radio. Thanks to Joe and other developers of the `WSJT-X` software program, hams now can work the world with modest transceivers and a computer with an audio card.
 
 `WSJT-X` not only offers new radio modes to hams, but it provides a  software platform to better understand our radio environment. When we look at the WSJT-X's Band Activity display, we see information that we don't typically have in other modes, including:
 
