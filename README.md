@@ -4,8 +4,8 @@
 ## Changes in Version 1.0.2
 I've added two major changes in this release:
 
-* JT-Mapper now has real argument parsing to allow you to specify log file location, enable debugging, change colors, and a host of other options. Type `./JT-Mapper.R --help` or `./JT-Mapper.R -h` for the full set of options.
-* JT-Mapper now can parse and update its map in 15 second intervals when WSJT-X is in FT8 mode.
+* **Argument parsing**: JT-Mapper now has real argument parsing to allow you to specify log file location, enable debugging, change colors, and a host of other options. Type `./JT-Mapper.R --help` or `./JT-Mapper.R -h` for the full set of options.
+* **FT 8 support**: JT-Mapper now can parse and update its map in 15 second intervals when WSJT-X is in FT8 mode.
 
 These changes should make the program a bit more useful for today's WSJT-X user. I only recently got up on WSJT-X 1.8RC1 so I hadn't noticed FT8 mode until a few weeks ago.
 
