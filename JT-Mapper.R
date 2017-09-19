@@ -368,7 +368,10 @@ oldlog = ""
 callsign_locator.db <- NULL
 
 
-targetclockseconds <- c(14, 29, 44, 51, 59)       # second times we should wake up and refresh if needed
+ft8clockseconds <- c(15, 30, 45, 60)        # second times we should wake up and refresh if needed
+jt65clockseconds <- c(51)       # second times we should wake up and refresh if needed
+mode = "Unknown Mode"
+
 while (1) {
   timeofnow       <- now(tzone="GMT")
   datetimenow     <- parse_date_time(timeofnow, "%y-%m-%d %H:%M:%S")
@@ -388,8 +391,14 @@ while (1) {
     }
     if (oldlog[length(oldlog)] == logread[length(logread)]) {
       currentseconds <- floor(second(datetimenow))  # if not, wait until our next target time
+      if (mode == "FT8") {
+        targetclockseconds = ft8clockseconds
+      } else {
+        targetclockseconds = jt65clockseconds
+      }
       timediff       <- targetclockseconds - currentseconds
       timesremaining <- timediff[timediff > 0]
+      debug(sprintf("Times remaining = %d", timesremaining))
       sleeptime <- ifelse(length(timesremaining) > 0, min(timesremaining), 15)
       if (is.na(sleeptime) | is.infinite(sleeptime) | sleeptime == 0) { sleeptime <- 1 }
       debug(sprintf("Current seconds = %d, Sleeping for %d", currentseconds, sleeptime))
@@ -408,7 +417,7 @@ while (1) {
 ################################################################################################
 
 
-  mode = "Unknown Mode"
+  
   if (!is.na(logread[length(logread)]) & grepl("~", logread[length(logread)])) {
     mode = "FT8"
   }
@@ -544,7 +553,7 @@ while (1) {
            adj <- second(latest_time)           
            debug(sprintf("Initial Adj = %d", adj))
            if (mode == "FT8") {
-             while (adj > 15) { # adjust to closest 15 second boundary
+             while (adj > 17) { # adjust to closest 15 second boundary
                adj <- adj - 15
              }
            }
@@ -553,7 +562,7 @@ while (1) {
            }
            debug(sprintf("Adj = %d", adj))
            latest_time <- latest_time - adj    # go back to beginning of period           
-           latest_log.df     <- filter(log.df, datetime == latest_time)
+           latest_log.df     <- filter(log.df, datetime >= latest_time)
            debug(sprintf("@@@@@ log.df looking for %s @@@@@@", latest_time))
            debug(log.df)
 
