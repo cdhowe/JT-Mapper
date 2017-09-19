@@ -1,5 +1,6 @@
 #!/usr/local/bin/Rscript
 
+## version 1.0.3  2017-09-19 Fixed incorrect highlighting when starting up in Unknown mode
 ## version 1.0.2  2017-07-27 Added new argument parser, modified timing to 15 second intervals to accommodate FT8 mode
 ## version 1.0.1, 2017-05-03
 ## version 1.0.0, 2017-05-01
@@ -374,10 +375,17 @@ while (1) {
   ## Read the last N lines of the full log, usually ALL.TXT
   logread <- system(paste0('tail -', wsjtxlines, ' "', loglocation, '"'), 
                     intern=TRUE)
+  logread <- logread[logread != ""]  # eliminate null strings read
   ## Has the last entry for the log changed since last time we read it?
     debug(paste0(timeofnow, "----- LOG READ ------"))
     debug(sprintf("noldlog last entry = %s", oldlog[length(oldlog)]))
     debug(sprintf("logread last entry = %s", logread[length(logread)]))
+    if (is.na(logread[length(logread)]) | logread[length(logread)] == "") {
+      debug("Read null log entry")
+      print("Logread dump: ***************")
+      print(logread)
+      break();
+    }
     if (oldlog[length(oldlog)] == logread[length(logread)]) {
       currentseconds <- floor(second(datetimenow))  # if not, wait until our next target time
       timediff       <- targetclockseconds - currentseconds
@@ -400,7 +408,10 @@ while (1) {
 ################################################################################################
 
 
-  mode = "Unknown"
+  mode = "Unknown Mode"
+  if (!is.na(logread[length(logread)]) & grepl("~", logread[length(logread)])) {
+    mode = "FT8"
+  }
   log <- str_trim(logread)              # Get rid of trailing spaces
   for (i in length(log):1)  {           # See if we have a date at the beginning; that flags beginning of this band or mode
                                        
@@ -532,7 +543,7 @@ while (1) {
 
            adj <- second(latest_time)           
            debug(sprintf("Initial Adj = %d", adj))
-           if (mode == "FT8" | mode == "Unknown") {
+           if (mode == "FT8") {
              while (adj > 15) { # adjust to closest 15 second boundary
                adj <- adj - 15
              }

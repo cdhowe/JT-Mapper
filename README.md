@@ -1,7 +1,10 @@
 # JT-Mapper: Real-time JT65 and JT9 Maps
 ## Author: Carl Howe, WG1V
 
-## Changes in Version 1.0.2
+## Changes in Version 1.0.3, September 19, 2017
+Fixed a rather confusing bug that incorrectly computed which stations to highlight when starting up in an unknown mode. Also corrected behavior when a read of the log results in a null record.
+
+## Changes in Version 1.0.2, September 18, 2017
 I've added two major changes in this release:
 
 * **Argument parsing**: JT-Mapper now has real argument parsing to allow you to specify log file location, enable debugging, change colors, and a host of other options. Type `./JT-Mapper.R --help` or `./JT-Mapper.R -h` for the full set of options.
