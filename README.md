@@ -173,8 +173,11 @@ The same mapping engine can be used with slight modifications to monitor WSPR re
 
 ![](help-images/wspr-splash.jpg)
 
-The main thing to know about WSPR-mapper is that it only shows you the last hour's worth of signals. If the bands are dead, it can be really boring to look at.
+The labeling of stations is a little more detailed than in JT-Mapper -- you get signal strength, station power, and the amount of time since we last heard the station.
 
+The main thing to know about WSPR-mapper is that it only shows you the last hour's worth of signals. If the bands are dead, it can be really boring to watch.
+
+Happy mapping!
 
 Carl Howe
 wg1v@carlhowe.com
