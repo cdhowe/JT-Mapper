@@ -1,10 +1,20 @@
 # JT-Mapper: Real-time JT65 and JT9 Maps
 ## Author: Carl Howe, WG1V
 
-## Changes in Version 1.0.3, September 19, 2017
+I now have two programs in this repo: JT-Mapper.R, which maps JT65, JT9, and FT8 QSO modes, and WSPR-Mapper which does WSPR receive-only monitoring. 
+
+Most of the instructions below are for JT-Mapper, but I've included a screen shot of what the WSPR-Mapper output looks like at the bottom of this file.
+
+## Changes in JT-Mapper Version 1.0.4, January 6, 2019
+I added one enhancement and fixed a bug in this version in preparation for creating a new more dyanmic version of this program (that will be version 2.0) which has a different set of mapping engines.
+
+* **Added signal reports to the station labels**. Now you can see the strength of the signals you're receiving as well as the call signs.
+* **Fixed a bug in the FT8 refresh code. I was incorrectly calculating which stations were recently heard, which occasionally resulted in no heard tags.
+
+## Changes in JT-Mapper Version 1.0.3, September 19, 2017
 Fixed a rather confusing bug that incorrectly computed which stations to highlight when starting up in an unknown mode. Also corrected behavior when a read of the log results in a null record.
 
-## Changes in Version 1.0.2, September 18, 2017
+## Changes in JT-Mapper Version 1.0.2, September 18, 2017
 I've added two major changes in this release:
 
 * **Argument parsing**: JT-Mapper now has real argument parsing to allow you to specify log file location, enable debugging, change colors, and a host of other options. Type `./JT-Mapper.R --help` or `./JT-Mapper.R -h` for the full set of options.
@@ -12,8 +22,8 @@ I've added two major changes in this release:
 
 These changes should make the program a bit more useful for today's WSJT-X user. I only recently got up on WSJT-X 1.8RC1 so I hadn't noticed FT8 mode until a few weeks ago.
 
-## Version 1.0
-![](help-images/splashscreen.jpg)
+## JT-Mapper Version 1.0
+![](help-images/splashscreen1.0.4.jpg)
 
 The development of K1JT's JT65 and JT9 protocols have reinvented digital ham radio. Thanks to Joe and other developers of the `WSJT-X` software program, hams now can work the world with modest transceivers and a computer with an audio card.
 
@@ -154,9 +164,16 @@ I wrote this program to satisfy my own JT65 and JT9 operating interests and need
 * **Handling long and unusual callsigns**: The program callsign parser is pretty ad-hoc, and doesn't really understand extended callsigns. It muddles through, but it could do better.
 * **Overplotting**: If you hear many calls at once, they by necessity will overwrite each other on the map. You can reduce this by reducing the number of lines of log you process each run, but the program doesn't make any effort to avoid the issue.
 * **The map isn't a proper projection**: R is happy to do map projections, but doing them with a high resolution isn't very fast. Instead of slowing down the plotting for the prettiest plot, I simply plot latitude and longitude using a rectangular grid. As a result, many of the countries and continents are distorted from their actual shapes and areas.
-* **The program doesn't decode WSPR yet** . `JT-Mapper` will currently map anything it sees in the your ALL.TXT log that it recognizes, but WSPR transmissions are logged in a different file, and I'd like to color code and facet the maps according to band. That's a future project.
 
 I'm sure there are many more bugs; feel free to clone this repository and fix issues that bother you. And by all means, let me know if you modify the code to do nifty new things or to work better on other platforms. I can be reached at:
+
+# WSPR Mapper
+The same mapping engine can be used with slight modifications to monitor WSPR reception. Because most of us use WSPR for studying propagation, WSPR-Mapper displays its data on 8 different maps for different bands -- this is referred to as a faceted display. It looks like this:
+
+![](help-images/wspr-splash.jpg)
+
+The main thing to know about WSPR-mapper is that it only shows you the last hour's worth of signals. If the bands are dead, it can be really boring to look at.
+
 
 Carl Howe
 wg1v@carlhowe.com
