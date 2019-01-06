@@ -1,5 +1,6 @@
 #!/usr/local/bin/Rscript
 
+## version 1.0.4  2019-01-06 Added SN numbers to tags and fixed refresh time calcs.
 ## version 1.0.3  2017-09-19 Fixed incorrect highlighting when starting up in Unknown mode
 ## version 1.0.2  2017-07-27 Added new argument parser, modified timing to 15 second intervals to accommodate FT8 mode
 ## version 1.0.1, 2017-05-03
@@ -68,6 +69,7 @@ suppressWarnings(suppressMessages(library(dplyr, warn.conflicts=FALSE)))
 # command line arguments
 
 loglocation <- "/Users/chowe/Library/Application Support/WSJT-X/ALL.TXT"
+# loglocation <- "./ALL.TXT"
 mycall        <- "WG1V"                      # my station callsign
 mygrid        <- "FN42fk"                    # my station location
 wsjtxlines    <- "50"                    # how many recent log lines to plot
@@ -216,7 +218,6 @@ grid_to_latlon <- function(grid)
     return(df)
 }
 
-
 #################################################################################################
 ## Loglines_to_df parses the ALL.TXT log put out by WSJT-X for grid locators and call signs ## ##
 ## loglines is a vector of log lines,                                                          ##
@@ -224,65 +225,73 @@ grid_to_latlon <- function(grid)
 #################################################################################################
 
 loglines_to_df <- function(lines) {
-    lines <- str_trim(lines)
-    loglines <- grep("RR73$", lines, invert=TRUE, value=TRUE)           # RR73 is a signoff, not a grid locator 
-    loglines <- grep("Transmitting", loglines, invert=TRUE, value=TRUE) # Transmitting lines are different format
-    locations <- grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE)       # include only lines that have a locator at the end
-
-
-    ## Our challenge now is to see if we can upgrade "nonlocations",
-    ## i.e., those that don't have a locator grid in the line, with
-    ## gridsquare info and add them to the list
-
-    nonlocations <- na.omit(grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE, invert=TRUE))
-    rr73s <- grep("RR73$", lines, value=TRUE)        # find RR73s, which aren't locations
-    nonlocations <- c(nonlocations, rr73s)
-    
-    nonlocations <- gsub(" [A-Ra-r]{0,3}[-+]*\\d{0,2}$", "", nonlocations) # Take away the signal report or 73 at the end
-    nonlocation_call <- gsub(".* ", "", nonlocations)                    # leave just the callsign in the middle
-    nonlocation_state <- ifelse(grepl(mycall, nonlocations), "Calling", "Heard")
-    nonlocation_times <- str_extract(nonlocations, "^\\d{4}")
-
-    ## We need to look for our own call in case the station is calling us with a signal report
-    
-    nonlocation_df <- data.frame("call" = nonlocation_call, "time" = nonlocation_times,
-                                 "state" = nonlocation_state,
-                                 stringsAsFactors=FALSE)
-    located_lines <- merge(nonlocation_df, call_grid_df, by="call", all.x=TRUE, sort=FALSE)
-    located_calls <- na.omit(located_lines)
-#    debug("&&&&&& LOCATED LINES &&&&&&&&&")
-#    debug(located_lines)
-#    debug("@@@@@@@ LOCATED CALLS @@@@@@@")
-#    debug(located_calls)
-
-    ## OK, now we can do the mainline parsing of the lines that have locations at the end
-    
-    times <- str_extract(locations, "^\\d{4,6}")                # Extract the time at the beginning of the line
-#    times[str_length(times) == 4] = paste0(times[str_length(times) == 4], "48")
-    state <- ifelse(grepl(" CQ ", locations), "CQ", 
-             ifelse(grepl(paste0(" ", mycall, " "), locations), "Calling", "Heard")) # Find CQs
-    callsign_and_grid_regex <- "[A-Za-z0-9/]+ [A-Ra-r]{2}\\d{2}$"
-    lasttokens <- str_extract(locations, callsign_and_grid_regex) # Get the sending callsign and locator
-    
-    grids <- str_extract(lasttokens, "....$") # Grids contains just the locator
-    calls <- gsub(".....$", "", lasttokens)   # Deleting the locator leaves just the callsign
-    log_df <- data.frame("call" = calls, "time" = times, 
-                         "state" = state, "grid" = grids,
-                         stringsAsFactors=FALSE)
-    combinedlog_df <- rbind(located_calls, log_df)
-    sortedlog_df <- combinedlog_df %>% arrange(time)
-
-    newcalls <- data.frame("grid" = sortedlog_df$grid, "call" = sortedlog_df$call, stringsAsFactors=FALSE)
-    combinedcalls <- rbind(call_grid_df, newcalls)
-    call_grid_df <<- unique(combinedcalls) # update call_grid_df in global context
-
-#    debug("******* CALL GRID *********")
-#    debug(call_grid_df)
-    debug("###### SORTED LOG #######")
-    debug(sortedlog_df)
-
-    return(sortedlog_df)
+  lines <- str_trim(lines)
+  loglines <- grep("RR73$", lines, invert=TRUE, value=TRUE)           # RR73 is a signoff, not a grid locator 
+  loglines <- grep("Transmitting", loglines, invert=TRUE, value=TRUE) # Transmitting lines are different format
+  locations <- grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE)       # include only lines that have a locator at the end
+  
+  ## Our challenge now is to see if we can upgrade "nonlocations",
+  ## i.e., those that don't have a locator grid in the line, with
+  ## gridsquare info and add them to the list
+  
+  nonlocations <- na.omit(grep("[A-Ra-r]{2}\\d{2}$", loglines, value=TRUE, invert=TRUE))
+  rr73s <- grep("RR73$", lines, value=TRUE)        # find RR73s, which aren't locations
+  nonlocations <- c(nonlocations, rr73s)
+  
+  nonlocations <- gsub(" [A-Ra-r]{0,3}[-+]*\\d{0,2}$", "", nonlocations) # Take away the signal report or 73 at the end
+  nonlocation_called_station <-  gsub(" .*$", "", str_sub(nonlocations, start = 25))
+  nonlocation_call <- gsub(".* ", "", nonlocations)                    # leave just the callsign in the middle
+  nonlocation_state <- ifelse(mycall == nonlocation_called_station, "Calling", "Heard")
+  nonlocation_times <- str_extract(nonlocations, "^\\d{4}")
+  nonlocation_signal_strength <- str_sub(nonlocations, 8, 10)
+  
+  ## We need to look for our own call in case the station is calling us with a signal report
+  
+  nonlocation_df <- data.frame("call" = nonlocation_call, "time" = nonlocation_times,
+                               "state" = nonlocation_state,
+                               "signal_strength" = nonlocation_signal_strength,
+                               "called_station" = nonlocation_called_station,
+                               stringsAsFactors=FALSE)
+  located_lines <- merge(nonlocation_df, call_grid_df, by="call", all.x=TRUE, sort=FALSE)
+  located_calls <- na.omit(located_lines)
+  #    debug("&&&&&& LOCATED LINES &&&&&&&&&")
+  #    debug(located_lines)
+  #    debug("@@@@@@@ LOCATED CALLS @@@@@@@")
+  #    debug(located_calls)
+  
+  ## OK, now we can do the mainline parsing of the lines that have locations at the end
+  
+  times <- str_extract(locations, "^\\d{4,6}")                # Extract the time at the beginning of the line
+  #    times[str_length(times) == 4] = paste0(times[str_length(times) == 4], "48")
+  called_station <-  gsub(" .*$", "", str_sub(locations, start = 25))
+  state <- ifelse(called_station == "CQ", "CQ", 
+                  ifelse(called_station == mycall, "Calling", "Heard")) # Find CQs
+  callsign_and_grid_regex <- "[A-Za-z0-9/]+ [A-Ra-r]{2}\\d{2}$"
+  lasttokens <- str_extract(locations, callsign_and_grid_regex) # Get the sending callsign and locator
+  
+  grids <- str_extract(lasttokens, "....$") # Grids contains just the locator
+  calls <- gsub(".....$", "", lasttokens)   # Deleting the locator leaves just the callsign
+  signal_strength <- str_sub(locations, 8, 10)
+  log_df <- data.frame("call" = calls, "time" = times, 
+                       "state" = state, "grid" = grids,
+                       "signal_strength" = signal_strength,
+                       "called_station" = called_station,
+                       stringsAsFactors=FALSE)
+  combinedlog_df <- rbind(located_calls, log_df)
+  sortedlog_df <- combinedlog_df %>% arrange(time)
+  
+  newcalls <- data.frame("grid" = sortedlog_df$grid, "call" = sortedlog_df$call, stringsAsFactors=FALSE)
+  combinedcalls <- rbind(call_grid_df, newcalls)
+  call_grid_df <<- unique(combinedcalls) # update call_grid_df in global context
+  
+  #    debug("******* CALL GRID *********")
+  #    debug(call_grid_df)
+  debug("###### SORTED LOG #######")
+  debug(sortedlog_df)
+  
+  return(sortedlog_df)
 }
+
 
 ##############################
 ## Main Program starts here ##
@@ -550,16 +559,14 @@ while (1) {
            ## Compute how many seconds to subtract to derive the
            ## beginning of the reception period.
 
+           sec <- second(latest_time)           
            adj <- second(latest_time)           
            debug(sprintf("Initial Adj = %d", adj))
            if (mode == "FT8") {
-             while (adj > 17) { # adjust to closest 15 second boundary
-               adj <- adj - 15
-             }
+             target_sec <- (((sec %/% 15) - 1) %% 4) * 15
+             adj <- (sec - target_sec) %% 60
            }
-           if (adj == 0) {
-             adj = 15           # top of the minute, look back to 45
-           }
+           
            debug(sprintf("Adj = %d", adj))
            latest_time <- latest_time - adj    # go back to beginning of period           
            latest_log.df     <- filter(log.df, datetime >= latest_time)
@@ -591,26 +598,35 @@ while (1) {
            ###################################
            ## OK, it's time to plot the map ##
            ###################################
-           p <- p + geom_label(data=older_log.df, 
+           if (nrow(older_log.df) > 0) {
+             p <- p + geom_label(data=older_log.df, 
                                 aes(x=lon, y=lat+maplatrange*.04,
-                                    label=call, alpha=age),
+                                    label = paste0(call, " ", signal_strength), 
+                                    alpha=age),
                                group=NA, size=2.3, fill=oldcolor,
                                color="gray20")
-           p <- p + geom_label(data=latest_heard.df, 
-                                aes(x=lon, y=lat+maplatrange*.04,
-                                    label=call),
-                               group=NA, size=2.6, fill=heardcolor,
-                               fontface="bold", color="gray40")
-           p <- p + geom_label(data=latest_cqs.df, 
-                                aes(x=lon, y=lat+maplatrange*.04,
-                                    label=call),
-                               group=NA, size=3, fill=cqcolor,
-                               fontface="bold", color="white")
-           p <- p + geom_label(data=latest_calling.df, 
-                                aes(x=lon, y=lat+maplatrange*.04,
-                                    label=call),
-                               group=NA, size=3.5, fill=callingcolor,
-                               fontface="bold", color="white")
+           }
+           if (nrow(latest_heard.df) > 0) {
+             p <- p + geom_label(data=latest_heard.df, 
+                                 aes(x=lon, y=lat+maplatrange*.04,
+                                     label = paste0(call, " ", signal_strength)),
+                                 group=NA, size=2.6, fill=heardcolor,
+                                 fontface="bold", color="gray40")
+           }
+           if (nrow(latest_cqs.df) > 0) {
+             p <- p + geom_label(data=latest_cqs.df, 
+                                 aes(x=lon, y=lat+maplatrange*.04,
+                                     label = paste0(call, " ", signal_strength)),
+                                 group=NA, size=3, fill=cqcolor,
+                                 fontface="bold", color="white")
+           }
+           if (nrow(latest_calling.df) > 0) {
+             p <- p + geom_label(data=latest_calling.df, 
+                                 aes(x=lon, y=lat+maplatrange*.04,
+                                     label = paste0(call, " ", signal_strength)),
+                                 group=NA, size=3.5, fill=callingcolor,
+                                 fontface="bold", color="white")
+           }
            p <- p + scale_color_gradient(low = "darkgreen", high="skyblue")
                                         # mp <- mp + coord_map("ortho")
                                         # mp <- mp + facet_wrap(~ band)
