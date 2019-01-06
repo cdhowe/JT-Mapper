@@ -1,5 +1,6 @@
-# JT-Mapper: Real-time JT65 and JT9 Maps
-## Author: Carl Howe, WG1V
+# JT-Mapper and WSPR-Mapper
+## Real Time Maps for Modern Digital Modes
+Author: Carl Howe, WG1V
 
 I now have two programs in this repo: JT-Mapper.R, which maps JT65, JT9, and FT8 QSO modes, and WSPR-Mapper which does WSPR receive-only monitoring. 
 
